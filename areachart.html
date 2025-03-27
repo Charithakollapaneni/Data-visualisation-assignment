@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Population Growth Area Chart</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    .axis-label { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h2>Population Growth of Afghanistan</h2>
+  <div id="chart"></div>
+  
+  <script>
+    // Set dimensions and margins for the area chart
+    const margin = {top: 20, right: 30, bottom: 50, left: 60},
+          width = 800 - margin.left - margin.right,
+          height = 400 - margin.top - margin.bottom;
+
+    // Append the SVG object to the chart div
+    const svg = d3.select("#chart")
+                  .append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.top + margin.bottom)
+                  .append("g")
+                  .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    // Load the CSV data
+    d3.csv("world_population.csv").then(data => {
+      // Filter for Afghanistan
+      const countryData = data.filter(d => d["Country/Territory"] === "Afghanistan")[0];
+
+      // Define the years and build an array of {year, population} objects
+      const years = ["1970", "1980", "1990", "2000", "2010", "2015", "2020", "2022"];
+      const populationData = years.map(year => {
+        const col = year + " Population";
+        return { year: +year, population: +countryData[col] };
+      });
+
+      // Define the x scale (years)
+      const x = d3.scaleLinear()
+                  .domain(d3.extent(populationData, d => d.year))
+                  .range([0, width]);
+
+      // Define the y scale (population)
+      const y = d3.scaleLinear()
+                  .domain([0, d3.max(populationData, d => d.population)])
+                  .range([height, 0]);
+
+      // Define the area generator
+      const area = d3.area()
+                     .x(d => x(d.year))
+                     .y0(height)
+                     .y1(d => y(d.population))
+                     .curve(d3.curveMonotoneX);
+
+      // Append the area path
+      svg.append("path")
+         .datum(populationData)
+         .attr("fill", "steelblue")
+         .attr("d", area);
+
+      // Add the x-axis
+      svg.append("g")
+         .attr("transform", `translate(0, ${height})`)
+         .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+      // Add x-axis label
+      svg.append("text")
+         .attr("class", "axis-label")
+         .attr("x", width / 2)
+         .attr("y", height + margin.bottom - 10)
+         .attr("text-anchor", "middle")
+         .text("Year");
+
+      // Add the y-axis
+      svg.append("g")
+         .call(d3.axisLeft(y));
+
+      // Add y-axis label
+      svg.append("text")
+         .attr("class", "axis-label")
+         .attr("transform", "rotate(-90)")
+         .attr("x", -height / 2)
+         .attr("y", -margin.left + 15)
+         .attr("text-anchor", "middle")
+         .text("Population");
+
+      // Add chart title
+      svg.append("text")
+         .attr("x", width / 2)
+         .attr("y", -10)
+         .attr("text-anchor", "middle")
+         .style("font-size", "16px")
+         .text("Population Growth of Afghanistan (1970 - 2022)");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Evaluation Pie Chart</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .legend text {
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pie Chart Visualization: Car Evaluation Safety</h1>
+  <svg width="500" height="500"></svg>
+  <script>
+    // Dimensions and radius for the pie chart
+    const width = 500,
+          height = 500,
+          radius = Math.min(width, height) / 2 - 50;  // subtract margin for labels
+
+    // Append group element and center it
+    const svg = d3.select("svg")
+                  .attr("width", width)
+                  .attr("height", height)
+                  .append("g")
+                  .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+    // Define a color scale for the safety categories
+    const color = d3.scaleOrdinal()
+                    .domain(["low", "med", "high"])
+                    .range(["#ff9999", "#66b3ff", "#99ff99"]);
+
+    // Load the CSV file and process the data
+    d3.csv("car_evaluation.csv").then(data => {
+      
+      // Aggregate data: count the occurrences of each safety category
+      const safetyCount = d3.rollup(data, 
+                                    v => v.length, 
+                                    d => d.safety);
+      // Convert the aggregated data into an array of objects
+      const dataset = Array.from(safetyCount, ([safety, count]) => ({ safety, count }));
+      
+      // Create the pie layout using the count value
+      const pie = d3.pie()
+                    .value(d => d.count);
+      const data_ready = pie(dataset);
+
+      // Create an arc generator
+      const arc = d3.arc()
+                    .innerRadius(0)
+                    .outerRadius(radius);
+
+      // Build the pie chart: draw the slices
+      svg.selectAll('slice')
+         .data(data_ready)
+         .enter()
+         .append('path')
+         .attr('d', arc)
+         .attr('fill', d => color(d.data.safety))
+         .attr("stroke", "white")
+         .style("stroke-width", "2px");
+
+      // Add a legend to the chart
+      const legend = svg.append("g")
+                        .attr("class", "legend")
+                        .attr("transform", "translate(" + (-width / 2 + 20) + "," + (-height / 2 + 20) + ")");
+      
+      dataset.forEach((d, i) => {
+        const legendRow = legend.append("g")
+                                .attr("transform", "translate(0," + (i * 20) + ")");
+        legendRow.append("rect")
+                 .attr("width", 15)
+                 .attr("height", 15)
+                 .attr("fill", color(d.safety))
+                 .attr("stroke", "black");
+        legendRow.append("text")
+                 .attr("x", 20)
+                 .attr("y", 12)
+                 .text(d.safety)
+                 .attr("text-anchor", "start");
+      });
+
+      svg.append("text")
+         .attr("x", 0)
+         .attr("y", radius + 40)
+         .attr("text-anchor", "middle")
+         .style("font-size", "14px")
+         .text("Safety");
+
+      svg.append("text")
+         .attr("transform", "rotate(-90)")
+         .attr("x", -radius)
+         .attr("y", -radius - 20)
+         .attr("text-anchor", "middle")
+         .style("font-size", "14px")
+         .text("Count");
+    })
+    .catch(error => {
+      console.error("Error loading the CSV file:", error);
+    });
+  </script>
+</body>
+</html>
